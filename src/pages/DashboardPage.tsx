@@ -84,7 +84,7 @@ export const DashboardPage = () => {
   const [requestTimestamps, setRequestTimestamps] = useState<number[]>([])
   const [forcedCooldownSeconds, setForcedCooldownSeconds] = useState(0)
   const [rateLimitOverride, setRateLimitOverride] = useState<number | null>(null)
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(0)
 
   const estimatedTokens = useMemo(() => estimatePromptTokens(prompt), [prompt])
   const activeRequestTimestamps = useMemo(() => pruneOldRequests(requestTimestamps, now), [requestTimestamps, now])
@@ -109,7 +109,6 @@ export const DashboardPage = () => {
 
   useEffect(() => {
     if (!credentials) {
-      setError('No hay sesion activa. Inicia sesion nuevamente.')
       return
     }
 

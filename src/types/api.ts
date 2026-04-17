@@ -19,7 +19,7 @@ export interface UserCredentials {
   encryptedPassword: string
 }
 
-export interface RegisterUserRequest extends UserCredentials {}
+export type RegisterUserRequest = UserCredentials
 
 export interface RegisterUserResponse {
   userId: string

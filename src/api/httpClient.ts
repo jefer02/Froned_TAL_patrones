@@ -2,6 +2,18 @@ import type { ApiErrorResponse } from '../types/api'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string
 
+const buildUrl = (path: string): string => {
+  const normalizedBase = API_BASE_URL.replace(/\/+$/, '')
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  // Supports both base URLs with and without "/api" suffix.
+  if (normalizedBase.endsWith('/api') && normalizedPath.startsWith('/api/')) {
+    return `${normalizedBase}${normalizedPath.slice(4)}`
+  }
+
+  return `${normalizedBase}${normalizedPath}`
+}
+
 export class ApiError extends Error {
   public readonly status: number
   public readonly code: string
@@ -51,7 +63,7 @@ const parseRetryAfterSeconds = (headers: Headers): number | null => {
 }
 
 export const httpClient = async <T>(path: string, options: RequestInit = {}): Promise<HttpResult<T>> => {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildUrl(path), {
     ...options,
     headers: buildHeaders(options.headers)
   })
