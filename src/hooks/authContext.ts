@@ -11,6 +11,7 @@ export interface AuthContextValue {
   credentials: UserCredentials | null
   isLoading: boolean
   isAuthenticated: boolean
+  register: (payload: LoginPayload) => Promise<void>
   login: (payload: LoginPayload) => Promise<void>
   logout: () => void
 }

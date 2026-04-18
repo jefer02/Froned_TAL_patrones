@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { authApi } from '../api/authApi'
 import { usageApi } from '../api/usageApi'
-import { ApiError } from '../api/httpClient'
 import { storage } from '../utils/storage'
 import { encryptPassword } from '../utils/crypto'
 import type { User, UserCredentials } from '../types/api'
@@ -44,20 +43,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     void bootstrap()
   }, [])
 
-  const login = async ({ userId, password }: LoginPayload): Promise<void> => {
+  const createSession = async ({ userId, password }: LoginPayload): Promise<UserCredentials> => {
     const passwordEncrypted = await encryptPassword(password)
-    const session: UserCredentials = {
+    return {
       userId,
       encryptedPassword: passwordEncrypted
     }
+  }
 
-    try {
-      await authApi.register(session)
-    } catch (error) {
-      if (!(error instanceof ApiError) || error.status !== 409) {
-        throw error
-      }
-    }
+  const register = useCallback(async ({ userId, password }: LoginPayload): Promise<void> => {
+    const session = await createSession({ userId, password })
+
+    const response = await authApi.register(session)
+
+    storage.setAuthSession(session)
+    setCredentials(session)
+    setUser({
+      userId: response.userId,
+      plan: response.plan
+    })
+  }, [])
+
+  const login = useCallback(async ({ userId, password }: LoginPayload): Promise<void> => {
+    const session = await createSession({ userId, password })
 
     const status = await usageApi.getStatus(session)
 
@@ -67,13 +75,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       userId: status.userId,
       plan: status.currentPlan
     })
-  }
+  }, [])
 
-  const logout = (): void => {
+  const logout = useCallback((): void => {
     storage.clearAuthSession()
     setCredentials(null)
     setUser(null)
-  }
+  }, [])
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -81,10 +89,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       credentials,
       isLoading,
       isAuthenticated: Boolean(user),
+      register,
       login,
       logout
     }),
-    [user, credentials, isLoading]
+    [user, credentials, isLoading, register, login, logout]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

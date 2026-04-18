@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LoginForm } from '../components/auth/LoginForm'
 import { useAuth } from '../hooks/useAuth'
+import { ApiError } from '../api/httpClient'
 
 export const LoginPage = () => {
   const navigate = useNavigate()
-  const { login, isAuthenticated } = useAuth()
+  const { login, register, isAuthenticated } = useAuth()
   const [error, setError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmittingLogin, setIsSubmittingLogin] = useState(false)
+  const [isSubmittingRegister, setIsSubmittingRegister] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -16,16 +18,38 @@ export const LoginPage = () => {
   }, [isAuthenticated, navigate])
 
   const handleLogin = async ({ userId, password }: { userId: string; password: string }) => {
-    setIsSubmitting(true)
+    setIsSubmittingLogin(true)
     setError(null)
 
     try {
       await login({ userId, password })
       navigate('/app', { replace: true })
-    } catch {
-      setError('No se pudo iniciar sesion. Verifica tus credenciales.')
+    } catch (loginError) {
+      if (loginError instanceof ApiError) {
+        setError(loginError.message)
+      } else {
+        setError('No se pudo iniciar sesion. Verifica tus credenciales.')
+      }
     } finally {
-      setIsSubmitting(false)
+      setIsSubmittingLogin(false)
+    }
+  }
+
+  const handleRegister = async ({ userId, password }: { userId: string; password: string }) => {
+    setIsSubmittingRegister(true)
+    setError(null)
+
+    try {
+      await register({ userId, password })
+      navigate('/app', { replace: true })
+    } catch (registerError) {
+      if (registerError instanceof ApiError) {
+        setError(registerError.message)
+      } else {
+        setError('No se pudo registrar el usuario. Intenta de nuevo.')
+      }
+    } finally {
+      setIsSubmittingRegister(false)
     }
   }
 
@@ -43,7 +67,13 @@ export const LoginPage = () => {
           </p>
         </section>
 
-        <LoginForm isSubmitting={isSubmitting} error={error} onSubmit={handleLogin} />
+        <LoginForm
+          isSubmittingLogin={isSubmittingLogin}
+          isSubmittingRegister={isSubmittingRegister}
+          error={error}
+          onLogin={handleLogin}
+          onRegister={handleRegister}
+        />
       </div>
     </main>
   )

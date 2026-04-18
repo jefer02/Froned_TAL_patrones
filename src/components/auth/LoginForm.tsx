@@ -7,12 +7,20 @@ interface LoginFormValues {
 }
 
 interface LoginFormProps {
-  isSubmitting: boolean
+  isSubmittingLogin: boolean
+  isSubmittingRegister: boolean
   error: string | null
-  onSubmit: (values: LoginFormValues) => Promise<void>
+  onLogin: (values: LoginFormValues) => Promise<void>
+  onRegister: (values: LoginFormValues) => Promise<void>
 }
 
-export const LoginForm = ({ isSubmitting, error, onSubmit }: LoginFormProps) => {
+export const LoginForm = ({
+  isSubmittingLogin,
+  isSubmittingRegister,
+  error,
+  onLogin,
+  onRegister
+}: LoginFormProps) => {
   const [values, setValues] = useState<LoginFormValues>({ userId: '', password: '' })
   const [validationError, setValidationError] = useState<string | null>(null)
 
@@ -41,19 +49,28 @@ export const LoginForm = ({ isSubmitting, error, onSubmit }: LoginFormProps) => 
     return true
   }
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const executeAction = async (action: (values: LoginFormValues) => Promise<void>) => {
     if (!validate()) {
       return
     }
 
-    await onSubmit(values)
+    await action(values)
+  }
+
+  const handleLoginSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    await executeAction(onLogin)
+  }
+
+  const handleRegisterClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    await executeAction(onRegister)
   }
 
   const message = validationError ?? error
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 border border-slate-200 bg-white p-6 shadow-sm">
+    <form onSubmit={handleLoginSubmit} className="space-y-5 border border-slate-200 bg-white p-6 shadow-sm">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Acceso a plataforma IA</h1>
         <p className="mt-1 text-sm text-slate-600">Inicia sesion o registrate para enviar prompts y monitorear cuotas.</p>
@@ -92,13 +109,23 @@ export const LoginForm = ({ isSubmitting, error, onSubmit }: LoginFormProps) => 
 
       {message && <p className="text-sm text-red-700">{message}</p>}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full border border-brand-600 bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:border-slate-400 disabled:bg-slate-400"
-      >
-        {isSubmitting ? 'Ingresando...' : 'Entrar'}
-      </button>
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="submit"
+          disabled={isSubmittingLogin || isSubmittingRegister}
+          className="w-full border border-brand-600 bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:border-slate-400 disabled:bg-slate-400"
+        >
+          {isSubmittingLogin ? 'Entrando...' : 'Entrar'}
+        </button>
+        <button
+          type="button"
+          onClick={handleRegisterClick}
+          disabled={isSubmittingLogin || isSubmittingRegister}
+          className="w-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-100 disabled:text-slate-500"
+        >
+          {isSubmittingRegister ? 'Registrando...' : 'Registrarse'}
+        </button>
+      </div>
     </form>
   )
 }
